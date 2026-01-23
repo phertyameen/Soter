@@ -25,9 +25,11 @@ Create `app/backend/.env` from `app/backend/.env.example`:
 cp app/backend/.env.example app/backend/.env
 ```
 
-Then edit `.env` with your specific values.
+Then edit `.env` with your specific values. See [.env.example](.env.example) for detailed inline comments and local development defaults.
 
 ### Environment Variables
+
+All environment variables are documented in [`.env.example`](.env.example) with inline comments, examples, and notes on when each is required.
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
