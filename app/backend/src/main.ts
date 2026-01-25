@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -8,6 +9,8 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { config as loadEnv } from 'dotenv';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
 
 async function bootstrap() {
   // Load environment variables
@@ -33,8 +36,32 @@ async function bootstrap() {
   // Enable shutdown hooks
   app.enableShutdownHooks();
 
+  // Security Headers
+  app.use(helmet());
+
   // Enable CORS
-  app.enableCors();
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+    : [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+      ]; // Defaults for local dev
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
 
   // Global prefix
   app.setGlobalPrefix('api');
@@ -45,6 +72,12 @@ async function bootstrap() {
     defaultVersion: '1',
     prefix: 'v',
   });
+
+  // Register global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Register global request ID interceptor
+  app.useGlobalInterceptors(new RequestIdInterceptor());
 
   // Global validation pipe
   app.useGlobalPipes(
