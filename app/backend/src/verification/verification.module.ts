@@ -5,11 +5,13 @@ import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
 import { VerificationProcessor } from './verification.processor';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
+    AuditModule,
     BullModule.registerQueueAsync({
       name: 'verification',
       imports: [ConfigModule],

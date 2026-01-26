@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from './logger/logger.service';
@@ -8,6 +9,14 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { config as loadEnv } from 'dotenv';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
+import {
+  buildCorsOptions,
+  createCorsOriginValidator,
+  createHelmetMiddleware,
+  createRateLimiter,
+} from './common/security/security.module';
 
 async function bootstrap() {
   // Load environment variables
@@ -33,8 +42,13 @@ async function bootstrap() {
   // Enable shutdown hooks
   app.enableShutdownHooks();
 
-  // Enable CORS
-  app.enableCors();
+  const configService = app.get(ConfigService);
+
+  // Security middleware (order matters)
+  app.use(createHelmetMiddleware());
+  app.use(createCorsOriginValidator(configService));
+  app.enableCors(buildCorsOptions(configService));
+  app.use(createRateLimiter(configService));
 
   // Global prefix
   app.setGlobalPrefix('api');
@@ -45,6 +59,12 @@ async function bootstrap() {
     defaultVersion: '1',
     prefix: 'v',
   });
+
+  // Register global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Register global request ID interceptor
+  app.useGlobalInterceptors(new RequestIdInterceptor());
 
   // Global validation pipe
   app.useGlobalPipes(

@@ -7,10 +7,14 @@ import { AidModule } from './aid/aid.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { VerificationModule } from './verification/verification.module';
+import { TestErrorModule } from './test-error/test-error.module';
 import { LoggerModule } from './logger/logger.module';
+import { AuditModule } from './audit/audit.module';
 import { RequestCorrelationMiddleware } from './middleware/request-correlation.middleware';
+import { SecurityModule } from './common/security/security.module';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { CampaignsModule } from './campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -42,6 +46,10 @@ import { join } from 'node:path';
     HealthModule,
     AidModule,
     VerificationModule,
+    AuditModule,
+    SecurityModule,
+    TestErrorModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

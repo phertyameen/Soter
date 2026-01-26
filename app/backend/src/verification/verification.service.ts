@@ -9,6 +9,7 @@ import {
   VerificationJobData,
   VerificationResult,
 } from './interfaces/verification-job.interface';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class VerificationService {
@@ -20,6 +21,7 @@ export class VerificationService {
     @InjectQueue('verification') private verificationQueue: Queue,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {
     this.verificationMode =
       this.configService.get<string>('VERIFICATION_MODE') || 'mock';
@@ -61,6 +63,14 @@ export class VerificationService {
     });
 
     this.logger.log(`Enqueued verification job ${job.id} for claim ${claimId}`);
+
+    await this.auditService.record({
+      actorId: 'system',
+      entity: 'verification',
+      entityId: claimId,
+      action: 'enqueue',
+      metadata: { jobId: job.id || 'unknown' },
+    });
 
     return { jobId: job.id || 'unknown' };
   }
@@ -105,6 +115,17 @@ export class VerificationService {
     this.logger.log(
       `Claim ${claimId} verification completed with score ${result.score} (threshold: ${this.verificationThreshold})`,
     );
+
+    await this.auditService.record({
+      actorId: 'system',
+      entity: 'verification',
+      entityId: claimId,
+      action: 'complete',
+      metadata: {
+        score: result.score,
+        status: shouldVerify ? 'verified' : 'pending',
+      },
+    });
 
     return result;
   }
@@ -151,8 +172,8 @@ export class VerificationService {
     return 'This action adds a new verification';
   }
 
-  findAll() {
-    return `This action returns all verification`;
+  async findAll() {
+    return Promise.resolve([]);
   }
 
   async findOne(id: string) {
@@ -167,16 +188,23 @@ export class VerificationService {
     return claim;
   }
 
-  findByUser(userId: string) {
-    return `This action returns verification for user #${userId}`;
+  async findByUser(_userId: string) {
+    return Promise.resolve([]);
   }
 
-  update(id: string, _updateVerificationDto: any) {
-    return `This action updates a #${id} verification`;
+  async update(id: string, updateVerificationDto: Record<string, unknown>) {
+    await this.auditService.record({
+      actorId: 'system',
+      entity: 'verification',
+      entityId: id,
+      action: 'update',
+      metadata: updateVerificationDto,
+    });
+    return { id, message: 'Verification updated' };
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} verification`;
+  async remove(id: string) {
+    return Promise.resolve({ id, message: 'Removed' });
   }
 
   async getQueueMetrics() {

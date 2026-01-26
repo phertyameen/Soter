@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { getQueueToken } from '@nestjs/bullmq';
 import { VerificationService } from './verification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 describe('VerificationService', () => {
   let service: VerificationService;
@@ -64,6 +65,12 @@ describe('VerificationService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
             },
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            record: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
